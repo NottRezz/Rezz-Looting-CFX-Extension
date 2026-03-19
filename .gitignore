@@ -1,0 +1,22 @@
+# Build output
+bin/
+obj/
+packages/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Optional (if using npm/NUI stuff)
+node_modules/
+
+# Environment / config
+.env
