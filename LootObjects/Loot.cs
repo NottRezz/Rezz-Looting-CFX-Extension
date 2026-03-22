@@ -25,7 +25,7 @@ namespace Rezz_Looting_Server
 
         public override string ToString()
         {
-            return $"Loot: {LootLabel} ({LootName}) x{LootAmount}";
+            return $"Loot: {LootLabel} ({LootName}) x{LootAmount} at {Coords}";
         }
     }
 }

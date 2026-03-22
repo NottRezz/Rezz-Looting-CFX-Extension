@@ -19,29 +19,56 @@ namespace Rezz_Looting_Server
             // =========================
             LootAreas = new Dictionary<int, LootArea>
             {
+                {
+                    0,
+                    new LootArea(
+                        0,
+                        new Vector3(-5647.97f, -3417.02f, -22.63f),
 
-                {1, new LootArea(1, new Vector3(-5647.97f, -3417.02f, -22.63f),
-                    new List<LootAreaSpawnZones>
-                    {
-                        new LootAreaSpawnZones(1, new Vector3(-5647.97f, -3417.02f, -22.63f), "NONE")
-                    },
-                    5, "Food", 5, 50, 1)
+                        new Dictionary<int, LootAreaSpawnZones>
+                        {
+                            {0, new LootAreaSpawnZones(1, 0, new Vector3(-5647.97f, -3417.02f, -22.63f), "NONE") },
+                            {1, new LootAreaSpawnZones(1, 1, new Vector3(-5647.97f, -3417.02f, -22.63f), "NONE") },
+                            {2, new LootAreaSpawnZones(1, 2, new Vector3(-5647.97f, -3417.02f, -22.63f), "NONE") }
+
+                        },
+
+                        5,"Food",5,100,1
+                    )
                 },
 
-                {2, new LootArea(2, new Vector3(-5655.00f, -3425.00f, -22.63f),
-                    new List<LootAreaSpawnZones>
-                    {
-                        new LootAreaSpawnZones(2, new Vector3(-5647.97f, -3417.02f, -22.63f), "NONE")
-                    },
-                    5, "Medical", 4, 40, 2)},
+                {
+                    1,
+                    new LootArea(
+                        1,
+                        new Vector3(-5655.00f, -3425.00f, -22.63f),
 
-                {3, new LootArea(3, new Vector3(-5665.00f, -3430.00f, -22.63f),
-                    new List<LootAreaSpawnZones>
-                    {
-                        new LootAreaSpawnZones(3, new Vector3(-5647.97f, -3417.02f, -22.63f), "NONE")
-                    },
-                    5, "Military", 3, 30, 3)}
-            };;
+                        new Dictionary<int, LootAreaSpawnZones>
+                        {
+                            {0, new LootAreaSpawnZones(2, 0, new Vector3(-5647.97f, -3417.02f, -22.63f), "NONE") },
+                        },
+
+                        5,"Medical", 4,100,2
+                    )
+                },
+
+                {
+                    2,
+                    new LootArea(
+                        2,
+                        new Vector3(-5665.00f, -3430.00f, -22.63f),
+
+                        new Dictionary<int, LootAreaSpawnZones>
+                        {
+                            { 0, new LootAreaSpawnZones(3, 0, new Vector3(-5647.97f, -3417.02f, -22.63f), "NONE") },
+                            { 1, new LootAreaSpawnZones(3, 1, new Vector3(-5647.97f, -3417.02f, -22.63f), "NONE") },
+                            { 2, new LootAreaSpawnZones(3, 2, new Vector3(-5647.97f, -3417.02f, -22.63f), "NONE") },
+                        },
+
+                        5, "Military",3,30,3
+                    )
+                }
+            };
 
             // =========================
             // LOOT TABLES (WHAT CAN SPAWN)
@@ -51,7 +78,7 @@ namespace Rezz_Looting_Server
             {
                 ["Food"] = new List<LootDefinition>
                 {
-                    new LootDefinition("beans", "Canned Beans", "Food", 1, 2, 1, 2), // Example loot item: name, label, type, min amount, max amount, min tier, max tier
+                    new LootDefinition("beans", "Canned Beans", "Food", 1, 2, 1, 2),
                     new LootDefinition("water", "Water Bottle", "Food", 1, 1, 1, 3),
                     new LootDefinition("chips", "Bag of Chips", "Food", 1, 2, 1, 1)
                 },

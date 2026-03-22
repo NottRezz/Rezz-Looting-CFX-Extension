@@ -11,6 +11,9 @@ namespace Rezz_Looting_Server.LootObjects
     {
 
         public int MainZoneId { get; set; }
+
+        public int SubZoneId { get; set; }
+
         public bool HasLoot { get; set; }
 
         public Vector3 SpawnCoords { get; set; }
@@ -19,9 +22,10 @@ namespace Rezz_Looting_Server.LootObjects
 
         public Loot LootData { get; set; }
 
-        public LootAreaSpawnZones(int MainZoneId, Vector3 SpawnCoords, string ExclusiveType)
+        public LootAreaSpawnZones(int MainZoneId, int SubZoneId, Vector3 SpawnCoords, string ExclusiveType)
         {
             this.MainZoneId = MainZoneId;
+            this.SubZoneId = SubZoneId;
             this.SpawnCoords = SpawnCoords;
             this.ExclusiveType = ExclusiveType;
             HasLoot = false;
