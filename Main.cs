@@ -1,5 +1,6 @@
 ﻿using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using Newtonsoft.Json;
 using Rezz_Looting_Server;
 using Rezz_Looting_Server.LootObjects;
 using System;
@@ -23,8 +24,15 @@ public class Main : BaseScript
 
         API.RegisterCommand("simulateLoot", new Action<int, List<object>, string>(SimulateLootCommand), false);
         API.RegisterCommand("debugLoot", new Action<int, List<object>, string>(debugLoot), false);
+        API.RegisterCommand("jsonifyData", new Action<int, List<object>, string>(jsonData), false);
 
         BaseScript.Delay(1000);
+    }
+
+    private void jsonData(int source, List<object> args, string raw)
+    {
+        string data = JsonConvert.SerializeObject(MainLoot);
+        Debug.WriteLine(data);
     }
 
     // Main loop: handles cooldowns and triggers regen
@@ -151,51 +159,70 @@ public class Main : BaseScript
     // Initial loot generation from config
     private void InitializeLoot()
     {
+        MainLoot.Clear();
+
         foreach (var entry in config.LootAreas)
         {
-            var area = entry.Value;
-            var id = entry.Key;
+            var configArea = entry.Value;
+            var mainZoneId = entry.Key;
 
-            // copy config into runtime storage
-            LootArea TempStorage = new LootArea(id, area.ZoneCoords, area.LootSpawns, area.Radius, area.LootType, area.MaxLoot, area.SpawnChance, area.LootTier);
+            var runtimeSpawns = new Dictionary<int, LootAreaSpawnZones>();
 
-            for (int i = 0; i < area.LootSpawns.Count; i++)
+            foreach (var spawnEntry in configArea.LootSpawns)
             {
-                int lootId = nextLootId++;
+                var subZoneId = spawnEntry.Key;
+                var configSpawn = spawnEntry.Value;
 
-                // only spawn if slot is empty
-                if (!area.LootSpawns[i].HasLoot)
+                runtimeSpawns[subZoneId] = new LootAreaSpawnZones(configSpawn.MainZoneId, configSpawn.SubZoneId, configSpawn.SpawnCoords, configSpawn.ExclusiveType)
                 {
-                    Debug.WriteLine($"Zone: {area.ZoneId} Has SubZone Available!");
-
-                    if (rng.Next(1, 101) <= area.SpawnChance)
-                    {
-                        if (!config.LootTablesByType.TryGetValue(area.LootType, out var typeLoot))
-                            continue;
-
-                        // filter loot by tier
-                        var validLoot = typeLoot
-                            .Where(lootDef => area.LootTier >= lootDef.MinTier && area.LootTier <= lootDef.MaxTier)
-                            .ToList();
-
-                        var selectedLoot = validLoot[rng.Next(validLoot.Count)];
-
-                        // create loot object
-                        Loot LootObject = new Loot(i, area.LootSpawns[i].SpawnCoords, selectedLoot.LootName, selectedLoot.LootLabel, selectedLoot.LootType, 1);
-
-                        area.LootSpawns[i].HasLoot = true;
-                        area.LootSpawns[i].LootData = LootObject;
-
-                        Debug.WriteLine(LootObject.ToString());
-                    }
-                    else
-                    {
-                        Debug.WriteLine("No loot spawns, next");
-                    }
-                }
+                    HasLoot = false,
+                    LootData = null
+                };
             }
 
-            MainLoot.Add(id, TempStorage);
+            LootArea tempStorage = new LootArea(mainZoneId, configArea.ZoneCoords, runtimeSpawns, configArea.Radius, configArea.LootType, configArea.MaxLoot, configArea.SpawnChance, configArea.LootTier);
+
+            foreach (var spawnEntry in tempStorage.LootSpawns)
+            {
+                var subZoneId = spawnEntry.Key;
+                var spawnZone = spawnEntry.Value;
+
+                if (spawnZone.HasLoot)
+                    continue;
+
+                Debug.WriteLine($"Zone: {tempStorage.ZoneId} Has SubZone Available! ({subZoneId})");
+
+                if (rng.Next(1, 101) > tempStorage.SpawnChance)
+                {
+                    Debug.WriteLine("No loot spawns, next");
+                    continue;
+                }
+
+                if (!config.LootTablesByType.TryGetValue(tempStorage.LootType, out var typeLoot))
+                    continue;
+
+                var validLoot = typeLoot
+                    .Where(lootDef => tempStorage.LootTier >= lootDef.MinTier && tempStorage.LootTier <= lootDef.MaxTier)
+                    .ToList();
+
+                if (validLoot.Count == 0)
+                {
+                    Debug.WriteLine($"No valid loot found for zone {tempStorage.ZoneId}, subzone {subZoneId}");
+                    continue;
+                }
+
+                int lootId = nextLootId++;
+                var selectedLoot = validLoot[rng.Next(validLoot.Count)];
+
+                Loot lootObject = new Loot(lootId, spawnZone.SpawnCoords, selectedLoot.LootName, selectedLoot.LootLabel, selectedLoot.LootType, 1);
+
+                spawnZone.HasLoot = true;
+                spawnZone.LootData = lootObject;
+
+                Debug.WriteLine(lootObject.ToString());
+            }
+
+            MainLoot[mainZoneId] = tempStorage;
         }
     }
 
