@@ -17,7 +17,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\Output\</OutputPath>
+    <OutputPath>..\..\[DEV-SERVERS]\c#Server\server-data\resources\[REZ]\rezz_looting\server\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>5</WarningLevel>
@@ -46,7 +46,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config.cs" />
-    <Compile Include="Loot.cs" />
+    <Compile Include="LootObjects\Loot.cs" />
+    <Compile Include="LootObjects\LootArea.cs" />
+    <Compile Include="LootObjects\LootAreaSpawnZones.cs" />
+    <Compile Include="LootObjects\LootDefinition.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

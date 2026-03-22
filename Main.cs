@@ -1,4 +1,5 @@
 ﻿using CitizenFX.Core;
+using CitizenFX.Core.Native;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,7 @@ namespace Rezz_Looting_Server
     {
         Config config = new Config();
 
-        private Dictionary<int, Loot> LootDictionary = new Dictionary<int, Loot>(); // MAIN LOOT DICT
+        private Dictionary<int, LootArea> MainLoot = new Dictionary<int, LootArea>();
 
         private Random rng = new Random();
 
@@ -28,21 +29,36 @@ namespace Rezz_Looting_Server
             foreach (var entry in config.LootAreas)
             {
                 var area = entry.Value;
+                var id = entry.Key;
+                LootArea TempStorage = new LootArea(id, area.ZoneCoords, area.LootSpawns, area.Radius, area.LootType, area.MaxLoot, area.SpawnChance, area.LootTier);
 
-                for (int i = 0; i < area.MaxLoot; i++)
+                for (int i = 0; i < area.LootSpawns.Count; i++)
                 {
-                    if (LootDictionary.Count >= config.MaxLoot)
-                        return;
-
-                    if (rng.Next(1, 101) <= area.SpawnChance)
+                    if (!area.LootSpawns[i].HasLoot)
                     {
-                        int lootId = nextLootId++;
+                        Debug.WriteLine($"Zone: {area.ZoneId} Has SubZone Available! ");
+                        if (rng.Next(1, 101) <= area.SpawnChance)
+                        {
+                            if (!config.LootTablesByType.TryGetValue(area.LootType, out var typeLoot))
+                                continue;
 
-                        // Loot loot = new Loot(...);
-                        // LootDictionary.Add(lootId, loot);
+                            var validLoot = typeLoot
+                            .Where(lootDef => area.LootTier >= lootDef.MinTier && area.LootTier <= lootDef.MaxTier)
+                            .ToList();
 
-                        Debug.WriteLine($"Spawned loot {lootId} in area {area.ZoneId}");
+                            var selectedLoot = validLoot[rng.Next(validLoot.Count)];
+
+                            Loot LootObject = new Loot(i, area.LootSpawns[i].SpawnCoords, selectedLoot.LootName, selectedLoot.LootLabel, selectedLoot.LootType, 1);
+
+                            Debug.WriteLine(LootObject.ToString());
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"No loot spawns, next");
+                        }
                     }
+                    int lootId = nextLootId++;
+                    MainLoot.Add(id, TempStorage);
                 }
             }
         }

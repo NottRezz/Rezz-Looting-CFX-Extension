@@ -1,4 +1,6 @@
 ﻿using CitizenFX.Core;
+using Rezz_Looting_Server.LootObjects;
+using System.Collections.Generic;
 
 namespace Rezz_Looting_Server
 {
@@ -11,19 +13,19 @@ namespace Rezz_Looting_Server
         public string LootType { get; set; }
         public Vector3 Coords { get; set; }
 
-        public Loot(int lootId, string lootName, string lootLabel, string lootType, int lootAmount, Vector3 coords)
+        public Loot(int LootId, Vector3 Coords, string LootName, string LootLabel, string LootType, int LootAmount)
         {
-            LootId = lootId;
-            LootName = lootName;
-            LootLabel = lootLabel;
-            LootType = lootType;
-            LootAmount = lootAmount;
-            Coords = coords;
+            this.LootId = LootId;
+            this.Coords = Coords;
+            this.LootName = LootName;
+            this.LootLabel = LootLabel;
+            this.LootType = LootType;
+            this.LootAmount = LootAmount;
         }
 
         public override string ToString()
         {
-            return $"Loot: {LootLabel} ({LootName}) x{LootAmount} at {Coords}";
+            return $"Loot: {LootLabel} ({LootName}) x{LootAmount}";
         }
     }
 }

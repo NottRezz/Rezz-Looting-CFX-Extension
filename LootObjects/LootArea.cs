@@ -1,4 +1,6 @@
 ﻿using CitizenFX.Core;
+using Rezz_Looting_Server.LootObjects;
+using System.Collections.Generic;
 
 namespace Rezz_Looting_Server
 {
@@ -6,6 +8,7 @@ namespace Rezz_Looting_Server
     {
         public int ZoneId { get; set; }
         public Vector3 ZoneCoords { get; set; }
+        public List<LootAreaSpawnZones> LootSpawns { get; set; }
         public float Radius { get; set; }
         public string LootType { get; set; }
         public int MaxLoot { get; set; }
@@ -13,15 +16,18 @@ namespace Rezz_Looting_Server
         public bool CanRegen { get; set; }
         public int LootTier { get; set; }
 
-        public LootArea(int zoneId, Vector3 zoneCoords, float radius, string lootType, int maxLoot, int spawnChance, int lootTier)
+        public Dictionary<int, Loot> ActiveLoot { get; set; } = new Dictionary<int, Loot>();
+
+        public LootArea(int ZoneId, Vector3 ZoneCoords, List<LootAreaSpawnZones> LootSpawns, float Radius, string LootType, int MaxLoot, int SpawnChance, int LootTier)
         {
-            ZoneId = zoneId;
-            ZoneCoords = zoneCoords;
-            Radius = radius;
-            LootType = lootType;
-            MaxLoot = maxLoot;
-            SpawnChance = spawnChance;
-            LootTier = lootTier;
+            this.ZoneId = ZoneId;
+            this.ZoneCoords = ZoneCoords;
+            this.LootSpawns = LootSpawns;
+            this.Radius = Radius;
+            this.LootType = LootType;
+            this.MaxLoot = MaxLoot;
+            this.SpawnChance = SpawnChance;
+            this.LootTier = LootTier;
             CanRegen = false;
         }
 
