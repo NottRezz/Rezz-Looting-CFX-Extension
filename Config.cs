@@ -19,7 +19,7 @@ namespace Rezz_Looting_Server
 
             LootAreas = new Dictionary<int, LootArea>
             {
-                {1, new LootArea(1, new Vector3(-5647.97f, -3417.02f, -22.63f), 5, "Food", 5, 50, 1)}, //ZoneID, LootArea (zoneId (int), zoneCoords (Vector3), radius (int), lootType (string), maxLoot (int), spawnChance (int), canRengen (bool), Loot Tier (int)
+                {1, new LootArea(1, new Vector3(-5647.97f, -3417.02f, -22.63f), 5, "Food", 5, 50, 1)}, //ZoneID, LootArea (zoneId (int), zoneCoords (Vector3), radius (int), lootType (string), maxLoot (int), spawnChance (int), Loot Tier (int)
             };
         }
     }
