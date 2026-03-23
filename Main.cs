@@ -22,16 +22,70 @@ public class Main : BaseScript
         InitializeLoot();     // initial spawn
         DebugMainLoot();      // main loop (regen handling)
 
-        API.RegisterCommand("simulateLoot", new Action<int, List<object>, string>(SimulateLootCommand), false);
+        API.RegisterCommand("simulateLoot", new Action<int, List<object>, string>(LootObject), false);
         API.RegisterCommand("debugLoot", new Action<int, List<object>, string>(debugLoot), false);
-        API.RegisterCommand("jsonifyData", new Action<int, List<object>, string>(jsonData), false);
+        API.RegisterCommand("jsonifyData", new Action<int, List<object>, string>(GetZones), false);
 
         BaseScript.Delay(1000);
     }
 
-    private void jsonData(int source, List<object> args, string raw)
+    private void PlayerZoneChange(Player player, int ZoneId, bool enteringZone)
     {
-        string data = JsonConvert.SerializeObject(MainLoot);
+        Debug.WriteLine($"Zone change: {player.Name} -> {ZoneId} (Entering: {enteringZone})");
+        var zone = MainLoot[ZoneId];
+
+        if (!enteringZone)
+        {
+            if (zone != null)
+            {
+                if (zone.PlayersInZone.Count <= 0)
+                {
+                    zone.ZoneLoadState(false);
+                }
+            }
+        }
+        else
+        {
+            if (!MainLoot.ContainsKey(ZoneId))
+            {
+                Debug.WriteLine($"Zone {ZoneId} not found!");
+                return;
+            }
+
+            if (!int.TryParse(player.Handle, out int playerId))
+            {
+                Debug.WriteLine($"Invalid player handle: {player.Handle}");
+                return;
+            }
+
+            if (!zone.PlayersInZone.Contains(playerId))
+            {
+                if (zone.PlayersInZone.Count == 0)
+                {
+                    zone.ZoneLoadState(true);
+                }
+                zone.PlayersInZone.Add(playerId);
+            }
+        }
+    }
+
+    private void GetZones(int source, List<object> args, string raw)
+    {
+        var zones = new List<object>();
+
+        foreach (var entry in MainLoot)
+        {
+            var loot = entry.Value;
+
+            zones.Add(new
+            {
+                ZoneID = loot.ZoneId,
+                ZoneCoords = loot.ZoneCoords,
+                Radius = loot.Radius
+            });
+        }
+
+        string data = JsonConvert.SerializeObject(zones);
         Debug.WriteLine(data);
     }
 
@@ -109,11 +163,11 @@ public class Main : BaseScript
     }
 
     // Simulates looting from a specific zone/subzone
-    private void SimulateLootCommand(int source, List<object> args, string raw)
+    private void LootObject(int source, List<object> args, string raw)
     {
         // DemoData = Zone 0, SubZone 1
 
-        if (!MainLoot.TryGetValue(0, out var lootArea))
+        if (!MainLoot.TryGetValue(1, out var lootArea))
         {
             Debug.WriteLine("Loot area not found.");
             return;
@@ -121,7 +175,7 @@ public class Main : BaseScript
 
         try
         {
-            if (!lootArea.LootSpawns.TryGetValue(1, out var spawnZone))
+            if (!lootArea.LootSpawns.TryGetValue(0, out var spawnZone))
             {
                 Debug.WriteLine("Spawn zone not found.");
                 return;
@@ -135,6 +189,13 @@ public class Main : BaseScript
 
             // remove loot from spawn
             var lootData = spawnZone.LootData;
+            int objectId = API.NetworkGetEntityFromNetworkId(lootData.LootEntityId);
+
+            if (API.DoesEntityExist(objectId))
+            {
+                API.DeleteEntity(objectId);
+            }
+
             spawnZone.LootData = null;
             spawnZone.HasLoot = false;
 

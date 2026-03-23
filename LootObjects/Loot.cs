@@ -12,6 +12,8 @@ namespace Rezz_Looting_Server
         public int LootAmount { get; set; }
         public string LootType { get; set; }
         public Vector3 Coords { get; set; }
+        public string Loot3dModel { get; set; }
+        public int LootEntityId { get; set; }
 
         public Loot(int LootId, Vector3 Coords, string LootName, string LootLabel, string LootType, int LootAmount)
         {
@@ -21,6 +23,11 @@ namespace Rezz_Looting_Server
             this.LootLabel = LootLabel;
             this.LootType = LootType;
             this.LootAmount = LootAmount;
+        }
+
+        public void CreateModel()
+        {
+
         }
 
         public override string ToString()
