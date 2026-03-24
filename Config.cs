@@ -1,5 +1,4 @@
-﻿using CitizenFX.Core;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Rezz_Looting_Client
 {
@@ -10,10 +9,17 @@ namespace Rezz_Looting_Client
         public Dictionary<string, List<LootDefinition>> LootTablesByType { get; set; }
     }
 
+    public class ZoneVector3  // Plain C# class, no CitizenFX dependency
+    {
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Z { get; set; }
+    }
+
     public class LootArea
     {
         public int ZoneId { get; set; }
-        public Vector3 ZoneCoords { get; set; }
+        public ZoneVector3 ZoneCoords { get; set; }  // ← changed
         public Dictionary<int, LootAreaSpawnZones> LootSpawns { get; set; }
         public float Radius { get; set; }
         public string LootType { get; set; }
@@ -26,7 +32,7 @@ namespace Rezz_Looting_Client
     {
         public int MainZoneId { get; set; }
         public int SubZoneId { get; set; }
-        public Vector3 SpawnCoords { get; set; }
+        public ZoneVector3 SpawnCoords { get; set; }  // ← changed
         public string ExclusiveType { get; set; }
     }
 
