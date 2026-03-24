@@ -9,9 +9,7 @@ using System.Linq;
 
 public class Main : BaseScript
 {
-    Config config = new Config();
-
-    // Holds live loot state (runtime, not config)
+    private Config config;
     private Dictionary<int, LootArea> MainLoot = new Dictionary<int, LootArea>();
 
     private Random rng = new Random();
@@ -19,6 +17,9 @@ public class Main : BaseScript
 
     public Main()
     {
+        string json = API.LoadResourceFile(API.GetCurrentResourceName(), "config.json");
+        config = JsonConvert.DeserializeObject<Config>(json);
+
         InitializeLoot();     // initial spawn
         DebugMainLoot();      // main loop (regen handling)
 
@@ -167,7 +168,10 @@ public class Main : BaseScript
     {
         // DemoData = Zone 0, SubZone 1
 
-        if (!MainLoot.TryGetValue(1, out var lootArea))
+        int Zone = 1;
+        int SubZone = 0;
+
+        if (!MainLoot.TryGetValue(Zone, out var lootArea))
         {
             Debug.WriteLine("Loot area not found.");
             return;
@@ -175,7 +179,7 @@ public class Main : BaseScript
 
         try
         {
-            if (!lootArea.LootSpawns.TryGetValue(0, out var spawnZone))
+            if (!lootArea.LootSpawns.TryGetValue(SubZone, out var spawnZone))
             {
                 Debug.WriteLine("Spawn zone not found.");
                 return;
@@ -208,6 +212,7 @@ public class Main : BaseScript
             {
                 lootArea.CanRegen = true;
                 lootArea.CooldownTimer = 10;
+                MainLoot[Zone].ZoneLoadState(false);
                 Debug.WriteLine("Loot Area is Empty: Regen Timer Started. Time Remaining: 10s");
             }
         }

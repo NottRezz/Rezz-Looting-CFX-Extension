@@ -1,0 +1,163 @@
+{
+  "MaxLoot": 100,
+
+  "LootAreas": {
+    "0": {
+      "ZoneId": 0,
+      "ZoneCoords": { "X": -5647.97, "Y": -3417.02, "Z": -22.63 },
+
+      "LootSpawns": {
+        "0": {
+          "MainZoneId": 1,
+          "SubZoneId": 0,
+          "SpawnCoords": { "X": -5647.97, "Y": -3417.02, "Z": -22.63 },
+          "ExclusiveType": "NONE"
+        },
+        "1": {
+          "MainZoneId": 1,
+          "SubZoneId": 1,
+          "SpawnCoords": { "X": -5647.97, "Y": -3417.02, "Z": -22.63 },
+          "ExclusiveType": "NONE"
+        },
+        "2": {
+          "MainZoneId": 1,
+          "SubZoneId": 2,
+          "SpawnCoords": { "X": -5647.97, "Y": -3417.02, "Z": -22.63 },
+          "ExclusiveType": "NONE"
+        }
+      },
+
+      "Radius": 5,
+      "LootType": "Food",
+      "MaxLoot": 5,
+      "SpawnChance": 100,
+      "LootTier": 1
+    },
+
+    "1": {
+      "ZoneId": 1,
+      "ZoneCoords": { "X": -5655.0, "Y": -3425.0, "Z": -22.63 },
+
+      "LootSpawns": {
+        "0": {
+          "MainZoneId": 2,
+          "SubZoneId": 0,
+          "SpawnCoords": { "X": -5647.97, "Y": -3417.02, "Z": -22.63 },
+          "ExclusiveType": "NONE"
+        }
+      },
+
+      "Radius": 5,
+      "LootType": "Medical",
+      "MaxLoot": 4,
+      "SpawnChance": 100,
+      "LootTier": 2
+    },
+
+    "2": {
+      "ZoneId": 2,
+      "ZoneCoords": { "X": -5665.0, "Y": -3430.0, "Z": -22.63 },
+
+      "LootSpawns": {
+        "0": {
+          "MainZoneId": 3,
+          "SubZoneId": 0,
+          "SpawnCoords": { "X": -5647.97, "Y": -3417.02, "Z": -22.63 },
+          "ExclusiveType": "NONE"
+        },
+        "1": {
+          "MainZoneId": 3,
+          "SubZoneId": 1,
+          "SpawnCoords": { "X": -5647.97, "Y": -3417.02, "Z": -22.63 },
+          "ExclusiveType": "NONE"
+        },
+        "2": {
+          "MainZoneId": 3,
+          "SubZoneId": 2,
+          "SpawnCoords": { "X": -5647.97, "Y": -3417.02, "Z": -22.63 },
+          "ExclusiveType": "NONE"
+        }
+      },
+
+      "Radius": 5,
+      "LootType": "Military",
+      "MaxLoot": 3,
+      "SpawnChance": 30,
+      "LootTier": 3
+    }
+  },
+
+  "LootTablesByType": {
+    "Food": [
+      {
+        "LootName": "beans",
+        "LootLabel": "Canned Beans",
+        "LootType": "Food",
+        "MinAmount": 1,
+        "MaxAmount": 2,
+        "MinTier": 1,
+        "MaxTier": 2
+      },
+      {
+        "LootName": "water",
+        "LootLabel": "Water Bottle",
+        "LootType": "Food",
+        "MinAmount": 1,
+        "MaxAmount": 1,
+        "MinTier": 1,
+        "MaxTier": 3
+      },
+      {
+        "LootName": "chips",
+        "LootLabel": "Bag of Chips",
+        "LootType": "Food",
+        "MinAmount": 1,
+        "MaxAmount": 2,
+        "MinTier": 1,
+        "MaxTier": 1
+      }
+    ],
+
+    "Medical": [
+      {
+        "LootName": "bandage",
+        "LootLabel": "Bandage",
+        "LootType": "Medical",
+        "MinAmount": 1,
+        "MaxAmount": 3,
+        "MinTier": 1,
+        "MaxTier": 3
+      },
+      {
+        "LootName": "medkit",
+        "LootLabel": "Med Kit",
+        "LootType": "Medical",
+        "MinAmount": 1,
+        "MaxAmount": 1,
+        "MinTier": 2,
+        "MaxTier": 3
+      }
+    ],
+
+    "Military": [
+      {
+        "LootName": "pistol_ammo",
+        "LootLabel": "Pistol Ammo",
+        "LootType": "Military",
+        "MinAmount": 6,
+        "MaxAmount": 18,
+        "MinTier": 2,
+        "MaxTier": 3
+      },
+      {
+        "LootName": "rifle_ammo",
+        "LootLabel": "Rifle Ammo",
+        "LootType": "Military",
+        "MinAmount": 10,
+        "MaxAmount": 30,
+        "MinTier": 3,
+        "MaxTier": 4
+      }
+    ]
+  }
+}

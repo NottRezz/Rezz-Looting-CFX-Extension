@@ -53,6 +53,7 @@ namespace Rezz_Looting_Server
                     lootData.LootEntityId = 0; // Changed from null to 0
                 }
             }
+            Debug.WriteLine("Zone State: " + shouldLoad);
         }
 
         public override string ToString()
