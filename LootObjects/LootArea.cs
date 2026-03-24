@@ -2,6 +2,7 @@
 using CitizenFX.Core.Native;
 using Rezz_Looting_Server.LootObjects;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Rezz_Looting_Server
 {
@@ -33,7 +34,7 @@ namespace Rezz_Looting_Server
             CanRegen = false;
         }
 
-        public void ZoneLoadState(bool shouldLoad)
+        public async Task ZoneLoadState(bool shouldLoad)
         {
             foreach (var entry in LootSpawns)
             {
@@ -48,23 +49,23 @@ namespace Rezz_Looting_Server
                 {
                     int Entity = API.CreateObjectNoOffset((uint)API.GetHashKey(lootData.Loot3dModel), lootData.Coords.X, lootData.Coords.Y, lootData.Coords.Z - (float)1.0, true, true, false);
                     API.FreezeEntityPosition(Entity, true);
-                    Debug.WriteLine($"Spawned Entity (NET ID): {Entity}");
-                    lootData.LootEntityId = Entity;
+
+                    // wait for entity to be registered on network
+                    await BaseScript.Delay(100);
+
+                    int netId = API.NetworkGetNetworkIdFromEntity(Entity);
+                    lootData.LootEntityId = netId;
+                    Debug.WriteLine("Spawned Entity (NET ID): " + netId);
                 }
                 else
                 {
-                    API.DeleteEntity(lootData.LootEntityId);
-                    Debug.WriteLine($"Unloaded Entity (NET ID): {lootData.LootEntityId}");
+                    int Entity = API.NetworkGetEntityFromNetworkId(lootData.LootEntityId);
+                    API.DeleteEntity(Entity);
+                    Debug.WriteLine("Unloaded Entity (NET ID): " + lootData.LootEntityId);
                     lootData.LootEntityId = 0;
                 }
             }
-
             Debug.WriteLine("Zone State: " + shouldLoad);
-        }
-
-        public override string ToString()
-        {
-            return $"Loot Area: {ZoneId} ({ZoneCoords}) Radius: {Radius} Type: {LootType}";
         }
     }
 }
