@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using CitizenFX.Core;
+using System.Collections.Generic;
 
 namespace Rezz_Looting_Client
 {
@@ -45,5 +46,21 @@ namespace Rezz_Looting_Client
         public int MaxAmount { get; set; }
         public int MinTier { get; set; }
         public int MaxTier { get; set; }
+    }
+
+    internal class Loot
+    {
+        public int LootId { get; set; }
+        public string LootName { get; set; }
+        public string LootLabel { get; set; }
+        public int LootAmount { get; set; }
+        public string LootType { get; set; }
+        public Vector3 Coords { get; set; }
+        public string Loot3dModel { get; set; }
+        public int LootEntityId { get; set; }
+        public override string ToString()
+        {
+            return $"Loot: {LootLabel} ({LootName}) x{LootAmount} at {Coords}";
+        }
     }
 }
