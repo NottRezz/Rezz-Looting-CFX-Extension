@@ -51,7 +51,7 @@ namespace Rezz_Looting_Server
                     API.FreezeEntityPosition(Entity, true);
 
                     // wait for entity to be registered on network
-                    await BaseScript.Delay(100);
+                    await BaseScript.Delay(500);
 
                     int netId = API.NetworkGetNetworkIdFromEntity(Entity);
                     lootData.LootEntityId = netId;

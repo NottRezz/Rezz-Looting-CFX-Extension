@@ -32,7 +32,7 @@ public class Main : BaseScript
         BaseScript.Delay(1000);
     }
 
-    private void PlayerZoneChange([FromSource] Player player, int ZoneId, bool enteringZone)
+    private async void PlayerZoneChange([FromSource] Player player, int ZoneId, bool enteringZone)
     {
         if (!int.TryParse(player.Handle, out int playerId))
         {
@@ -55,7 +55,7 @@ public class Main : BaseScript
             zone.PlayersInZone.Remove(playerId);
             if (zone.PlayersInZone.Count <= 0)
             {
-                zone.ZoneLoadState(false);
+                await zone.ZoneLoadState(false);
             }
         }
         else
@@ -64,8 +64,17 @@ public class Main : BaseScript
             {
                 if (zone.PlayersInZone.Count == 0)
                 {
-                    zone.ZoneLoadState(true);
+                    await zone.ZoneLoadState(true);
                 }
+                var TempLoot = new Dictionary<int, object>();
+
+                foreach (var entry in zone.LootSpawns)
+                {
+                    var data = entry.Value;
+                    TempLoot.Add(entry.Key, entry.Value.LootData);
+                }
+                string SerializedLoot = JsonConvert.SerializeObject(TempLoot);
+                TriggerClientEvent("rezz_looting:client:RecieveLootData", player.Handle, SerializedLoot);
                 zone.PlayersInZone.Add(playerId);
             }
         }
