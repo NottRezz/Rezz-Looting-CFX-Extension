@@ -27,38 +27,39 @@ public class Main : BaseScript
         API.RegisterCommand("debugLoot", new Action<int, List<object>, string>(debugLoot), false);
         API.RegisterCommand("jsonifyData", new Action<int, List<object>, string>(GetZones), false);
 
+        EventHandlers["rezz_loot:server:enteredZone"] += new Action<Player, int, bool>(PlayerZoneChange);
+
         BaseScript.Delay(1000);
     }
 
-    private void PlayerZoneChange(Player player, int ZoneId, bool enteringZone)
+    private void PlayerZoneChange([FromSource] Player player, int ZoneId, bool enteringZone)
     {
-        Debug.WriteLine($"Zone change: {player.Name} -> {ZoneId} (Entering: {enteringZone})");
+        if (!int.TryParse(player.Handle, out int playerId))
+        {
+            Debug.WriteLine($"Invalid player handle: {player.Handle}");
+            return;
+        }
+
+        if (!MainLoot.ContainsKey(ZoneId))
+        {
+            Debug.WriteLine($"Zone {ZoneId} not found!");
+            return;
+        }
+
         var zone = MainLoot[ZoneId];
+
+        Debug.WriteLine($"Zone change: {player.Name} -> {ZoneId} (Entering: {enteringZone})");
 
         if (!enteringZone)
         {
-            if (zone != null)
+            zone.PlayersInZone.Remove(playerId);
+            if (zone.PlayersInZone.Count <= 0)
             {
-                if (zone.PlayersInZone.Count <= 0)
-                {
-                    zone.ZoneLoadState(false);
-                }
+                zone.ZoneLoadState(false);
             }
         }
         else
         {
-            if (!MainLoot.ContainsKey(ZoneId))
-            {
-                Debug.WriteLine($"Zone {ZoneId} not found!");
-                return;
-            }
-
-            if (!int.TryParse(player.Handle, out int playerId))
-            {
-                Debug.WriteLine($"Invalid player handle: {player.Handle}");
-                return;
-            }
-
             if (!zone.PlayersInZone.Contains(playerId))
             {
                 if (zone.PlayersInZone.Count == 0)
@@ -280,7 +281,7 @@ public class Main : BaseScript
                 int lootId = nextLootId++;
                 var selectedLoot = validLoot[rng.Next(validLoot.Count)];
 
-                Loot lootObject = new Loot(lootId, spawnZone.SpawnCoords, selectedLoot.LootName, selectedLoot.LootLabel, selectedLoot.LootType, 1);
+                Loot lootObject = new Loot(lootId, spawnZone.SpawnCoords, selectedLoot.LootName, selectedLoot.LootLabel, selectedLoot.LootType, 1, selectedLoot.Loot3dModel);
 
                 spawnZone.HasLoot = true;
                 spawnZone.LootData = lootObject;
@@ -323,7 +324,7 @@ public class Main : BaseScript
             var selected = validLoot[rng.Next(validLoot.Count)];
             int lootId = nextLootId++;
 
-            var loot = new Loot(lootId, spawnZone.SpawnCoords, selected.LootName, selected.LootLabel, selected.LootType, 1);
+            var loot = new Loot(lootId, spawnZone.SpawnCoords, selected.LootName, selected.LootLabel, selected.LootType, 1, selected.Loot3dModel);
 
             spawnZone.HasLoot = true;
             spawnZone.LootData = loot;

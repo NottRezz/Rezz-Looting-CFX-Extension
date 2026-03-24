@@ -9,8 +9,10 @@
         public int MaxAmount { get; set; }
         public int MinTier { get; set; }
         public int MaxTier { get; set; }
+        public string Loot3dModel { get; set; }
+        // Remove the constructor entirely, Newtonsoft handles it
 
-        public LootDefinition(string lootName, string lootLabel, string lootType, int minAmount, int maxAmount, int minTier, int maxTier)
+        public LootDefinition(string lootName, string lootLabel, string lootType, int minAmount, int maxAmount, int minTier, int maxTier, string Loot3dModel)
         {
             LootName = lootName;
             LootLabel = lootLabel;
@@ -19,6 +21,7 @@
             MaxAmount = maxAmount;
             MinTier = minTier;
             MaxTier = maxTier;
+            this.Loot3dModel = Loot3dModel;
         }
     }
 }

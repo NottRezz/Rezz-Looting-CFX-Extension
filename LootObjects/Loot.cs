@@ -15,7 +15,7 @@ namespace Rezz_Looting_Server
         public string Loot3dModel { get; set; }
         public int LootEntityId { get; set; }
 
-        public Loot(int LootId, Vector3 Coords, string LootName, string LootLabel, string LootType, int LootAmount)
+        public Loot(int LootId, Vector3 Coords, string LootName, string LootLabel, string LootType, int LootAmount, string Loot3dModel)
         {
             this.LootId = LootId;
             this.Coords = Coords;
@@ -23,11 +23,7 @@ namespace Rezz_Looting_Server
             this.LootLabel = LootLabel;
             this.LootType = LootType;
             this.LootAmount = LootAmount;
-        }
-
-        public void CreateModel()
-        {
-
+            this.Loot3dModel = Loot3dModel;
         }
 
         public override string ToString()
