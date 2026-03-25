@@ -5,15 +5,20 @@ using Rezz_Looting_Server;
 using Rezz_Looting_Server.LootObjects;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
+using System.Security.Policy;
 
 public class Main : BaseScript
 {
     private Config config;
     private Dictionary<int, LootArea> MainLoot = new Dictionary<int, LootArea>();
+    private Dictionary<int, int> PlayersInZones = new Dictionary<int, int>();
 
     private Random rng = new Random();
     private int nextLootId = 1; // ensures unique loot IDs
+
+    public dynamic Core;
 
     public Main()
     {
@@ -23,13 +28,24 @@ public class Main : BaseScript
         InitializeLoot();     // initial spawn
         DebugMainLoot();      // main loop (regen handling)
 
-        API.RegisterCommand("simulateLoot", new Action<int, List<object>, string>(LootObject), false);
         API.RegisterCommand("debugLoot", new Action<int, List<object>, string>(debugLoot), false);
         API.RegisterCommand("jsonifyData", new Action<int, List<object>, string>(GetZones), false);
 
         EventHandlers["rezz_loot:server:enteredZone"] += new Action<Player, int, bool>(PlayerZoneChange);
+        EventHandlers["onResourceStop"] += new Action<string>(OnResourceStop);
+        EventHandlers["playerDropped"] += new Action<Player, string, string, uint>(OnPlayerDropped);
+        EventHandlers["rezz_looting:server:LootObjet"] += new Action<Player, int, int>(LootObject);
+
+        Core = Exports["vorp_core"].GetCore();
 
         BaseScript.Delay(1000);
+    }
+
+    private async void OnPlayerDropped([FromSource] Player player, string reason, string resourceName, uint clientDropReason)
+    {
+        Debug.WriteLine($"Player {player.Name} dropped (Reason: {reason}, Resource: {resourceName}, Client Drop Reason: {clientDropReason}).");
+        int source = int.Parse(player.Handle);
+        await RemovePlayerFromZone(source);
     }
 
     private async void PlayerZoneChange([FromSource] Player player, int ZoneId, bool enteringZone)
@@ -52,11 +68,7 @@ public class Main : BaseScript
 
         if (!enteringZone)
         {
-            zone.PlayersInZone.Remove(playerId);
-            if (zone.PlayersInZone.Count <= 0)
-            {
-                await zone.ZoneLoadState(false);
-            }
+            await RemovePlayerFromZone(playerId);
         }
         else
         {
@@ -66,16 +78,14 @@ public class Main : BaseScript
                 {
                     await zone.ZoneLoadState(true);
                 }
-                var TempLoot = new Dictionary<int, object>();
 
-                foreach (var entry in zone.LootSpawns)
-                {
-                    var data = entry.Value;
-                    TempLoot.Add(entry.Key, entry.Value.LootData);
-                }
-                string SerializedLoot = JsonConvert.SerializeObject(TempLoot);
-                TriggerClientEvent("rezz_looting:client:RecieveLootData", player.Handle, SerializedLoot);
+                SendLootDataToPlayer(ZoneId, player.Handle);
                 zone.PlayersInZone.Add(playerId);
+
+                if (!PlayersInZones.ContainsKey(playerId))
+                {
+                    PlayersInZones.Add(playerId, ZoneId);
+                }
             }
         }
     }
@@ -134,6 +144,7 @@ public class Main : BaseScript
             {
                 Debug.WriteLine("Cooldown Over, Regenerating Loot");
                 GenerateLootForZone(zoneId);
+
             }
         }
     }
@@ -174,17 +185,33 @@ public class Main : BaseScript
     }
 
     // Simulates looting from a specific zone/subzone
-    private void LootObject(int source, List<object> args, string raw)
+    private async void LootObject([FromSource] Player player, int passedNetId, int passedZoneId)
     {
         // DemoData = Zone 0, SubZone 1
+        Debug.WriteLine($"{player.Handle} {passedNetId} {passedZoneId}");
+        var ActiveZone = MainLoot[passedZoneId];
+        var LootData = ActiveZone.LootSpawns;
 
-        int Zone = 1;
+        int Zone = passedZoneId;
         int SubZone = 0;
+
+
 
         if (!MainLoot.TryGetValue(Zone, out var lootArea))
         {
             Debug.WriteLine("Loot area not found.");
             return;
+        }
+
+        foreach (var entry in LootData)
+        {
+            var data = entry.Value;
+
+            if (data.LootData != null && data.LootData.LootEntityId == passedNetId)
+            {
+                SubZone = entry.Key;
+                break;
+            }
         }
 
         try
@@ -214,6 +241,12 @@ public class Main : BaseScript
             spawnZone.HasLoot = false;
 
             Debug.WriteLine($"Loot found: {lootData}");
+            API.DeleteEntity(API.NetworkGetEntityFromNetworkId(passedNetId));
+
+            dynamic vorpInventory = Exports["vorp_inventory"];
+
+            vorpInventory.addItem(player.Handle, lootData.LootName, lootData.LootAmount);
+            Core.NotifyRightTip(player.Handle, $"+ x{lootData.LootAmount} {lootData.LootLabel}", 5000);
 
             // check if entire area is now empty
             bool isEmpty = lootArea.LootSpawns.Values.All(z => z.LootData == null);
@@ -222,7 +255,7 @@ public class Main : BaseScript
             {
                 lootArea.CanRegen = true;
                 lootArea.CooldownTimer = 10;
-                MainLoot[Zone].ZoneLoadState(false);
+                await MainLoot[Zone].ZoneLoadState(false);
                 Debug.WriteLine("Loot Area is Empty: Regen Timer Started. Time Remaining: 10s");
             }
         }
@@ -258,90 +291,152 @@ public class Main : BaseScript
 
             LootArea tempStorage = new LootArea(mainZoneId, configArea.ZoneCoords, runtimeSpawns, configArea.Radius, configArea.LootType, configArea.MaxLoot, configArea.SpawnChance, configArea.LootTier);
 
-            foreach (var spawnEntry in tempStorage.LootSpawns)
-            {
-                var subZoneId = spawnEntry.Key;
-                var spawnZone = spawnEntry.Value;
-
-                if (spawnZone.HasLoot)
-                    continue;
-
-                Debug.WriteLine($"Zone: {tempStorage.ZoneId} Has SubZone Available! ({subZoneId})");
-
-                if (rng.Next(1, 101) > tempStorage.SpawnChance)
-                {
-                    Debug.WriteLine("No loot spawns, next");
-                    continue;
-                }
-
-                if (!config.LootTablesByType.TryGetValue(tempStorage.LootType, out var typeLoot))
-                    continue;
-
-                var validLoot = typeLoot
-                    .Where(lootDef => tempStorage.LootTier >= lootDef.MinTier && tempStorage.LootTier <= lootDef.MaxTier)
-                    .ToList();
-
-                if (validLoot.Count == 0)
-                {
-                    Debug.WriteLine($"No valid loot found for zone {tempStorage.ZoneId}, subzone {subZoneId}");
-                    continue;
-                }
-
-                int lootId = nextLootId++;
-                var selectedLoot = validLoot[rng.Next(validLoot.Count)];
-
-                Loot lootObject = new Loot(lootId, spawnZone.SpawnCoords, selectedLoot.LootName, selectedLoot.LootLabel, selectedLoot.LootType, 1, selectedLoot.Loot3dModel);
-
-                spawnZone.HasLoot = true;
-                spawnZone.LootData = lootObject;
-
-                Debug.WriteLine(lootObject.ToString());
-            }
+            GenerateLootForSpawnZones(tempStorage);
 
             MainLoot[mainZoneId] = tempStorage;
         }
     }
 
+    private void OnResourceStop(string resourceName)
+    {
+        if (API.GetCurrentResourceName() != resourceName)
+            return;
+
+        Debug.WriteLine($"[{resourceName}] Resource stopping, deleting all loot spawns...");
+
+        foreach (var entry in MainLoot)
+        {
+            var loot = entry.Value;
+            foreach (var lootData in loot.LootSpawns)
+            {
+                var data = lootData.Value;
+                var lootObj = data.LootData;
+
+                if (lootObj != null)
+                {
+                    int entity = API.NetworkGetEntityFromNetworkId(lootObj.LootEntityId);
+                    API.DeleteEntity(entity);
+                }
+                
+            }
+        }
+        Debug.WriteLine($"[{resourceName}] All loot spawns deleted and cleared.");
+    }
+
+    #region Helper Functions
+
+    private async System.Threading.Tasks.Task RemovePlayerFromZone(int playerId)
+    {
+        if (PlayersInZones.ContainsKey(playerId))
+        {
+            int zoneId = PlayersInZones[playerId];
+            var zone = MainLoot[zoneId];
+            zone.PlayersInZone.Remove(playerId);
+            PlayersInZones.Remove(playerId);
+
+            if (zone.PlayersInZone.Count <= 0)
+            {
+                await zone.ZoneLoadState(false);
+            }
+        }
+    }
+
+    private string SerializeLootForZone(int zoneId)
+    {
+        var TempLoot = new Dictionary<int, object>();
+
+        foreach (var entry in MainLoot[zoneId].LootSpawns)
+        {
+            TempLoot.Add(entry.Key, entry.Value.LootData);
+        }
+
+        return JsonConvert.SerializeObject(TempLoot);
+    }
+
+    private void SendLootDataToPlayer(int zoneId, string playerHandle)
+    {
+        string SerializedLoot = SerializeLootForZone(zoneId);
+        TriggerClientEvent("rezz_looting:client:RecieveLootData", playerHandle, SerializedLoot);
+    }
+
+    private void SendLootDataToPlayers(int zoneId, string serializedLoot)
+    {
+        for (int i = 0; i < MainLoot[zoneId].PlayersInZone.Count; i++)
+        {
+            TriggerClientEvent("rezz_looting:client:RecieveLootData", MainLoot[zoneId].PlayersInZone[i], serializedLoot);
+        }
+    }
+
+    private void GenerateLootForSpawnZones(LootArea lootArea)
+    {
+        foreach (var spawnEntry in lootArea.LootSpawns)
+        {
+            var subZoneId = spawnEntry.Key;
+            var spawnZone = spawnEntry.Value;
+
+            if (spawnZone.HasLoot)
+                continue;
+
+            Debug.WriteLine($"Zone: {lootArea.ZoneId} Has SubZone Available! ({subZoneId})");
+
+            if (rng.Next(1, 101) > lootArea.SpawnChance)
+            {
+                Debug.WriteLine("No loot spawns, next");
+                continue;
+            }
+
+            if (!config.LootTablesByType.TryGetValue(lootArea.LootType, out var typeLoot))
+                continue;
+
+            var validLoot = typeLoot
+                .Where(lootDef => lootArea.LootTier >= lootDef.MinTier && lootArea.LootTier <= lootDef.MaxTier)
+                .ToList();
+
+            if (validLoot.Count == 0)
+            {
+                Debug.WriteLine($"No valid loot found for zone {lootArea.ZoneId}, subzone {subZoneId}");
+                continue;
+            }
+
+            int lootId = nextLootId++;
+            var selectedLoot = validLoot[rng.Next(validLoot.Count)];
+
+            Loot lootObject = new Loot(lootId, spawnZone.SpawnCoords, selectedLoot.LootName, selectedLoot.LootLabel, selectedLoot.LootType, 1, selectedLoot.Loot3dModel);
+
+            spawnZone.HasLoot = true;
+            spawnZone.LootData = lootObject;
+
+            Debug.WriteLine(lootObject.ToString());
+        }
+    }
+
+    #endregion
+
     // Regenerates loot for a specific zone
-    private void GenerateLootForZone(int zoneId)
+    private async void GenerateLootForZone(int zoneId)
     {
         if (!config.LootAreas.TryGetValue(zoneId, out var area))
             return;
 
         var id = area.ZoneId;
 
+        // preserve the existing players in zone
+        var existingPlayers = new List<int>(MainLoot[id].PlayersInZone);
+
         // create fresh runtime copy of zone
         var tempStorage = new LootArea(id, area.ZoneCoords, new Dictionary<int, LootAreaSpawnZones>(area.LootSpawns), area.Radius, area.LootType, area.MaxLoot, area.SpawnChance, area.LootTier);
 
-        foreach (var spawnEntry in tempStorage.LootSpawns)
-        {
-            var spawnZone = spawnEntry.Value;
-
-            if (spawnZone.HasLoot)
-                continue;
-
-            if (rng.Next(1, 101) > tempStorage.SpawnChance)
-                continue;
-
-            if (!config.LootTablesByType.TryGetValue(tempStorage.LootType, out var typeLoot))
-                continue;
-
-            var validLoot = typeLoot.Where(l => tempStorage.LootTier >= l.MinTier && tempStorage.LootTier <= l.MaxTier).ToList();
-            if (validLoot.Count == 0)
-                continue;
-
-            var selected = validLoot[rng.Next(validLoot.Count)];
-            int lootId = nextLootId++;
-
-            var loot = new Loot(lootId, spawnZone.SpawnCoords, selected.LootName, selected.LootLabel, selected.LootType, 1, selected.Loot3dModel);
-
-            spawnZone.HasLoot = true;
-            spawnZone.LootData = loot;
-
-            Debug.WriteLine(loot.ToString());
-        }
+        GenerateLootForSpawnZones(tempStorage);
 
         // overwrite existing zone with new loot state
         MainLoot[id] = tempStorage;
+
+        // restore the players in zone
+        MainLoot[id].PlayersInZone = existingPlayers;
+
+        await MainLoot[id].ZoneLoadState(true);
+
+        string SerializedLoot = SerializeLootForZone(id);
+        SendLootDataToPlayers(id, SerializedLoot);
     }
 }
