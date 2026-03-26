@@ -19,6 +19,7 @@ public class Main : BaseScript
     private const int DEFAULT_LOOT_AMOUNT = 1;
     private const int NOTIFICATION_DURATION_MS = 5000;
     private const int STARTUP_DELAY_MS = 1000;
+    private const int ENTITY_SYNC_DELAY_MS = 500;
     #endregion
 
     private Config config;
@@ -116,17 +117,19 @@ public class Main : BaseScript
                 if (!zone.PlayersInZone.Contains(playerId))
                 {
                     if (zone.PlayersInZone.Count == 0)
-                    {
-                        await zone.ZoneLoadState(true);
-                    }
+                        {
+                            await zone.ZoneLoadState(true);
+                            await BaseScript.Delay(ENTITY_SYNC_DELAY_MS);
+                        }
 
-                    SendLootDataToPlayer(ZoneId, player.Handle);
                     zone.PlayersInZone.Add(playerId);
 
                     if (!PlayersInZones.ContainsKey(playerId))
                     {
                         PlayersInZones.Add(playerId, ZoneId);
                     }
+
+                    SendLootDataToPlayer(ZoneId, player.Handle);
                 }
             }
         }
@@ -393,7 +396,10 @@ public class Main : BaseScript
 
         foreach (var entry in zone.LootSpawns)
         {
-            lootDictionary.Add(entry.Key, entry.Value.LootData);
+            if (entry.Value.LootData != null)
+            {
+                lootDictionary.Add(entry.Key, entry.Value.LootData);
+            }
         }
 
         return JsonConvert.SerializeObject(lootDictionary);
@@ -412,7 +418,7 @@ public class Main : BaseScript
 
         foreach (var playerId in zone.PlayersInZone)
         {
-            TriggerClientEvent("rezz_looting:client:RecieveLootData", playerId, serializedLoot);
+            TriggerClientEvent("rezz_looting:client:RecieveLootData", playerId.ToString(), serializedLoot);
         }
     }
 
@@ -495,6 +501,7 @@ public class Main : BaseScript
             if (existingPlayers.Count > 0)
             {
                 await MainLoot[zoneId].ZoneLoadState(true);
+                await BaseScript.Delay(ENTITY_SYNC_DELAY_MS);
                 string serializedLoot = SerializeLootForZone(zoneId);
                 SendLootDataToPlayers(zoneId, serializedLoot);
             }

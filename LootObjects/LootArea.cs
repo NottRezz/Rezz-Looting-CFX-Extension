@@ -47,25 +47,47 @@ namespace Rezz_Looting_Server
 
                 if (shouldLoad)
                 {
-                    int Entity = API.CreateObjectNoOffset((uint)API.GetHashKey(lootData.Loot3dModel), lootData.Coords.X, lootData.Coords.Y, lootData.Coords.Z - (float)1.0, true, true, false);
-                    API.FreezeEntityPosition(Entity, true);
+                    int entity = API.CreateObjectNoOffset((uint)API.GetHashKey(lootData.Loot3dModel), lootData.Coords.X, lootData.Coords.Y, lootData.Coords.Z, true, true, false);
 
-                    // wait for entity to be registered on network
-                    await BaseScript.Delay(500);
+                    if (entity == 0)
+                    {
+                        Debug.WriteLine($"[ERROR] Failed to create entity for loot: {lootData.LootLabel} ({lootData.Loot3dModel})");
+                        spawnZone.HasLoot = false;
+                        spawnZone.LootData = null;
+                        continue;
+                    }
 
-                    int netId = API.NetworkGetNetworkIdFromEntity(Entity);
+                    await BaseScript.Delay(100);
+
+                    int netId = API.NetworkGetNetworkIdFromEntity(entity);
+
+                    if (netId == 0)
+                    {
+                        Debug.WriteLine($"[ERROR] Failed to get network ID for entity: {lootData.LootLabel}");
+                        API.DeleteEntity(entity);
+                        spawnZone.HasLoot = false;
+                        spawnZone.LootData = null;
+                        continue;
+                    }
+
                     lootData.LootEntityId = netId;
-                    Debug.WriteLine("Spawned Entity (NET ID): " + netId);
+                    Debug.WriteLine($"Spawned Entity (NET ID): {netId} | {lootData.LootLabel}");
                 }
                 else
                 {
-                    int Entity = API.NetworkGetEntityFromNetworkId(lootData.LootEntityId);
-                    API.DeleteEntity(Entity);
-                    Debug.WriteLine("Unloaded Entity (NET ID): " + lootData.LootEntityId);
+                    if (lootData.LootEntityId != 0)
+                    {
+                        int entity = API.NetworkGetEntityFromNetworkId(lootData.LootEntityId);
+                        if (API.DoesEntityExist(entity))
+                        {
+                            API.DeleteEntity(entity);
+                        }
+                        Debug.WriteLine($"Unloaded Entity (NET ID): {lootData.LootEntityId}");
+                    }
                     lootData.LootEntityId = 0;
                 }
             }
-            Debug.WriteLine("Zone State: " + shouldLoad);
+            Debug.WriteLine($"Zone {ZoneId} State: {(shouldLoad ? "Loaded" : "Unloaded")}");
         }
     }
 }

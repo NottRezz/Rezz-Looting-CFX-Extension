@@ -24,6 +24,7 @@ namespace Rezz_Looting_Server
             this.LootType = LootType;
             this.LootAmount = LootAmount;
             this.Loot3dModel = Loot3dModel;
+            this.LootEntityId = 0;
         }
 
         public override string ToString()
