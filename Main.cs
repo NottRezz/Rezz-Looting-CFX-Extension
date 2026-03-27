@@ -20,6 +20,8 @@ public class Main : BaseScript
     private const int NOTIFICATION_DURATION_MS = 5000;
     private const int STARTUP_DELAY_MS = 1000;
     private const int ENTITY_SYNC_DELAY_MS = 500;
+    // Rarity roll weights (must sum to 100)
+    private static readonly int[] RarityWeights = { 56, 25, 12, 6, 1 };
     #endregion
 
     private Config config;
@@ -351,6 +353,22 @@ public class Main : BaseScript
 
     #region Helper Functions
 
+    private LootRarity RollRarity()
+    {
+        int roll = rng.Next(1, RNG_MAX_VALUE);
+        int cumulative = 0;
+        var rarities = (LootRarity[])Enum.GetValues(typeof(LootRarity));
+
+        for (int i = 0; i < RarityWeights.Length && i < rarities.Length; i++)
+        {
+            cumulative += RarityWeights[i];
+            if (roll <= cumulative)
+                return rarities[i];
+        }
+
+        return LootRarity.Common;
+    }
+
     private bool TryGetZone(int zoneId, out LootArea zone)
     {
         return MainLoot.TryGetValue(zoneId, out zone);
@@ -459,10 +477,39 @@ public class Main : BaseScript
                 continue;
             }
 
-            int lootId = nextLootId++;
-            var selectedLoot = validLoot[rng.Next(validLoot.Count)];
+            LootRarity rolledRarity = RollRarity();
+            LootDefinition selectedLoot = null;
 
-            Loot lootObject = new Loot(lootId, spawnZone.SpawnCoords, selectedLoot.LootName, selectedLoot.LootLabel, selectedLoot.LootType, DEFAULT_LOOT_AMOUNT, selectedLoot.Loot3dModel);
+            for (LootRarity r = rolledRarity; r >= LootRarity.Common; r--)
+            {
+                var matchingLoot = validLoot.Where(l => l.Rarity == r).ToList();
+                if (matchingLoot.Count > 0)
+                {
+                    selectedLoot = matchingLoot[rng.Next(matchingLoot.Count)];
+                    if (r != rolledRarity)
+                    {
+                        Debug.WriteLine($"Rarity fallback: Rolled {rolledRarity}, no items found. Fell back to {r}");
+                    }
+                    break;
+                }
+            }
+
+            if (selectedLoot == null)
+            {
+                Debug.WriteLine($"No loot found for any rarity in zone {lootArea.ZoneId}, subzone {subZoneId}");
+                continue;
+            }
+
+            int lootId = nextLootId++;
+
+            int lootAmount = rng.Next(selectedLoot.MinAmount, selectedLoot.MaxAmount);
+
+            if (lootAmount == null)
+            {
+                lootAmount = DEFAULT_LOOT_AMOUNT;
+            }
+
+            Loot lootObject = new Loot(lootId, spawnZone.SpawnCoords, selectedLoot.LootName, selectedLoot.LootLabel, selectedLoot.LootType, lootAmount, selectedLoot.Loot3dModel);
 
             spawnZone.HasLoot = true;
             spawnZone.LootData = lootObject;
@@ -491,7 +538,18 @@ public class Main : BaseScript
 
             var existingPlayers = new List<int>(currentZone.PlayersInZone);
 
-            var tempStorage = new LootArea(zoneId, area.ZoneCoords, new Dictionary<int, LootAreaSpawnZones>(area.LootSpawns), area.Radius, area.LootType, area.MaxLoot, area.SpawnChance, area.LootTier);
+            var runtimeSpawns = new Dictionary<int, LootAreaSpawnZones>();
+            foreach (var spawnEntry in area.LootSpawns)
+            {
+                var configSpawn = spawnEntry.Value;
+                runtimeSpawns[spawnEntry.Key] = new LootAreaSpawnZones(configSpawn.MainZoneId, configSpawn.SubZoneId, configSpawn.SpawnCoords, configSpawn.ExclusiveType)
+                {
+                    HasLoot = false,
+                    LootData = null
+                };
+            }
+
+            var tempStorage = new LootArea(zoneId, area.ZoneCoords, runtimeSpawns, area.Radius, area.LootType, area.MaxLoot, area.SpawnChance, area.LootTier);
 
             GenerateLootForSpawnZones(tempStorage);
 

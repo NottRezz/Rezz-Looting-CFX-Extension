@@ -1,4 +1,8 @@
-﻿namespace Rezz_Looting_Server
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Rezz_Looting_Server.LootObjects;
+
+namespace Rezz_Looting_Server
 {
     internal class LootDefinition
     {
@@ -10,9 +14,11 @@
         public int MinTier { get; set; }
         public int MaxTier { get; set; }
         public string Loot3dModel { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public LootRarity Rarity { get; set; }
         // Remove the constructor entirely, Newtonsoft handles it
 
-        public LootDefinition(string lootName, string lootLabel, string lootType, int minAmount, int maxAmount, int minTier, int maxTier, string Loot3dModel)
+        public LootDefinition(string lootName, string lootLabel, string lootType, int minAmount, int maxAmount, int minTier, int maxTier, string Loot3dModel, LootRarity rarity = LootRarity.Common)
         {
             LootName = lootName;
             LootLabel = lootLabel;
@@ -22,6 +28,7 @@
             MinTier = minTier;
             MaxTier = maxTier;
             this.Loot3dModel = Loot3dModel;
+            Rarity = rarity;
         }
     }
 }

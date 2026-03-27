@@ -54,6 +54,7 @@
     <Compile Include="LootObjects\LootArea.cs" />
     <Compile Include="LootObjects\LootAreaSpawnZones.cs" />
     <Compile Include="LootObjects\LootDefinition.cs" />
+    <Compile Include="LootObjects\LootRarity.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

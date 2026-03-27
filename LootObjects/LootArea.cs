@@ -8,6 +8,8 @@ namespace Rezz_Looting_Server
 {
     internal class LootArea
     {
+        private const int NET_ID_RETRY_ATTEMPTS = 5;
+        private const int NET_ID_RETRY_DELAY_MS = 200;
         public int ZoneId { get; set; }
         public Vector3 ZoneCoords { get; set; }
         public Dictionary<int, LootAreaSpawnZones> LootSpawns { get; set; }
@@ -57,13 +59,19 @@ namespace Rezz_Looting_Server
                         continue;
                     }
 
-                    await BaseScript.Delay(100);
-
-                    int netId = API.NetworkGetNetworkIdFromEntity(entity);
+                    int netId = 0;
+                    for (int attempt = 0; attempt < NET_ID_RETRY_ATTEMPTS; attempt++)
+                    {
+                        await BaseScript.Delay(NET_ID_RETRY_DELAY_MS);
+                        netId = API.NetworkGetNetworkIdFromEntity(entity);
+                        if (netId != 0)
+                            break;
+                        Debug.WriteLine($"[WARN] Network ID not ready for {lootData.LootLabel}, retry {attempt + 1}/{NET_ID_RETRY_ATTEMPTS}");
+                    }
 
                     if (netId == 0)
                     {
-                        Debug.WriteLine($"[ERROR] Failed to get network ID for entity: {lootData.LootLabel}");
+                        Debug.WriteLine($"[ERROR] Failed to get network ID for entity after {NET_ID_RETRY_ATTEMPTS} attempts: {lootData.LootLabel}");
                         API.DeleteEntity(entity);
                         spawnZone.HasLoot = false;
                         spawnZone.LootData = null;
